@@ -1,0 +1,50 @@
+name: Docker Linux Build
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 0 * * 1"
+
+jobs:
+  docker-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build in Docker
+        run: |
+          IMAGE="${Q2PRO_DOCKER_IMAGE:-ubuntu:24.04}"
+          docker run --rm -t \
+            -v "${{ github.workspace }}:/src" \
+            -w /src \
+            "$IMAGE" \
+            sh -c "apt-get update && \
+                   DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                   meson ninja-build build-essential \
+                   libsdl2-dev libopenal-dev \
+                   libpng-dev libjpeg-dev zlib1g-dev \
+                   mesa-common-dev libcurl4-gnutls-dev \
+                   libx11-dev libxi-dev \
+                   libwayland-dev wayland-protocols libdecor-0-dev && \
+                   meson setup --auto-features=enabled -Dwrap_mode=nofallback -Dsdl2=enabled -Dwindows-crash-dumps=disabled builddir && \
+                   meson compile -C builddir"
+
+      - name: Verify output
+        run: |
+          test -f builddir/q2pro
+          test -f builddir/q2proded
+          ls -1 builddir/game*.so
+          test -f builddir/config.h
+          echo "All expected artifacts are present."
+
+      - name: Upload Docker build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: q2pro-linux-docker
+          if-no-files-found: error
+          path: |
+            builddir/q2pro
+            builddir/q2proded
+            builddir/game*.so
+            builddir/config.h
