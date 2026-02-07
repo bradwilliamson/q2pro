@@ -112,6 +112,49 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define K_MWHEELLEFT    213
 #define K_MOUSELAST     213
 
+// joystick/gamepad buttons generate virtual keys
+#define K_JOYFIRST      214
+#define K_JOY1          214
+#define K_JOY2          215
+#define K_JOY3          216
+#define K_JOY4          217
+#define K_JOYLAST       217
+
+#define K_AUXFIRST      218
+#define K_AUX1          218
+#define K_AUX2          219
+#define K_AUX3          220
+#define K_AUX4          221
+#define K_AUX5          222
+#define K_AUX6          223
+#define K_AUX7          224
+#define K_AUX8          225
+#define K_AUX9          226
+#define K_AUX10         227
+#define K_AUX11         228
+#define K_AUX12         229
+#define K_AUX13         230
+#define K_AUX14         231
+#define K_AUX15         232
+#define K_AUX16         233
+#define K_AUX17         234
+#define K_AUX18         235
+#define K_AUX19         236
+#define K_AUX20         237
+#define K_AUX21         238
+#define K_AUX22         239
+#define K_AUX23         240
+#define K_AUX24         241
+#define K_AUX25         242
+#define K_AUX26         243
+#define K_AUX27         244
+#define K_AUX28         245
+#define K_AUX29         246
+#define K_AUX30         247
+#define K_AUX31         248
+#define K_AUX32         249
+#define K_AUXLAST       249
+
 typedef enum {
     KEY_GAME    = 0,
     KEY_CONSOLE = BIT(0),
@@ -135,10 +178,12 @@ void        Key_SetDest(keydest_t dest);
 int         Key_IsDown(int key);
 int         Key_AnyKeyDown(void);
 void        Key_ClearStates(void);
+bool        Key_IsWaiting(void);
 
 const char  *Key_KeynumToString(int keynum);
 int     Key_StringToKeynum(const char *str);
 void    Key_SetBinding(int keynum, const char *binding);
+const char  *Key_GetBindingForKey(int keynum);
 const char  *Key_GetBinding(const char *binding);
 int     Key_EnumBindings(int key, const char *binding);
 void    Key_WriteBindings(qhandle_t f);

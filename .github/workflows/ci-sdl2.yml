@@ -1,0 +1,127 @@
+name: CI - SDL2 Build
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch: {}
+
+env:
+  SDL2_VERSION: "2.32.10"
+
+jobs:
+  linux-sdl2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build libsdl2-dev libopenal-dev \
+            libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+            libcurl4-gnutls-dev libx11-dev libxi-dev \
+            libwayland-dev wayland-protocols libdecor-0-dev
+
+      - name: Configure
+        run: |
+          meson setup \
+            --auto-features=enabled \
+            --fatal-meson-warnings \
+            -Dwerror=true \
+            -Dwrap_mode=nofallback \
+            -Davcodec=disabled \
+            -Dsdl2=enabled \
+            -Dwindows-crash-dumps=disabled \
+            builddir
+
+      - name: Build
+        run: meson compile -C builddir
+
+      - name: Verify SDL2 enabled
+        run: grep -q "USE_SDL" builddir/config.h
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: q2pro-ci-sdl2-linux
+          if-no-files-found: error
+          path: |
+            builddir/q2pro
+            builddir/q2proded
+            builddir/game*.so
+            builddir/config.h
+            builddir/meson-logs/meson-log.txt
+
+  windows-sdl2:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install build tools
+        run: py -m pip install --upgrade pip meson ninja
+
+      - name: Fetch SDL2 VC SDK
+        shell: pwsh
+        run: |
+          $deps = Join-Path $env:GITHUB_WORKSPACE "deps"
+          New-Item -ItemType Directory -Force -Path $deps | Out-Null
+          $zip = Join-Path $deps "SDL2-devel-${{ env.SDL2_VERSION }}-VC.zip"
+          Invoke-WebRequest -Uri "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.SDL2_VERSION }}/SDL2-devel-${{ env.SDL2_VERSION }}-VC.zip" -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $deps -Force
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          py -m mesonbuild.mesonmain setup --vsenv `
+            --auto-features=enabled `
+            --fatal-meson-warnings `
+            -Dwerror=true `
+            -Dwrap_mode=forcefallback `
+            -Davcodec=disabled `
+            -Dsdl2=enabled `
+            -Dwayland=disabled `
+            -Dx11=disabled `
+            -Dcmake_prefix_path="$env:GITHUB_WORKSPACE/deps/SDL2-${{ env.SDL2_VERSION }}" `
+            builddir
+
+      - name: Build
+        shell: pwsh
+        run: py -m mesonbuild.mesonmain compile -C builddir
+
+      - name: Verify SDL2 enabled
+        shell: pwsh
+        run: |
+          Select-String -Path builddir\config.h -Pattern "USE_SDL" | Out-Null
+
+      - name: Stage CI artifacts
+        shell: pwsh
+        run: |
+          $out = "ci-artifacts"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item -Force builddir\q2pro.exe $out
+          Copy-Item -Force builddir\q2proded.exe $out
+          Copy-Item -Force builddir\gamex86_64.dll $out
+          Copy-Item -Force builddir\config.h $out
+          Copy-Item -Force builddir\meson-logs\meson-log.txt $out
+          Copy-Item -Force deps\SDL2-${{ env.SDL2_VERSION }}\lib\x64\SDL2.dll $out
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: q2pro-ci-sdl2-windows-x64
+          if-no-files-found: error
+          path: ci-artifacts/*

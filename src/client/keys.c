@@ -131,6 +131,44 @@ static const keyname_t keynames[] = {
     K(MWHEELRIGHT),
     K(MWHEELLEFT),
 
+    K(JOY1),
+    K(JOY2),
+    K(JOY3),
+    K(JOY4),
+
+    K(AUX1),
+    K(AUX2),
+    K(AUX3),
+    K(AUX4),
+    K(AUX5),
+    K(AUX6),
+    K(AUX7),
+    K(AUX8),
+    K(AUX9),
+    K(AUX10),
+    K(AUX11),
+    K(AUX12),
+    K(AUX13),
+    K(AUX14),
+    K(AUX15),
+    K(AUX16),
+    K(AUX17),
+    K(AUX18),
+    K(AUX19),
+    K(AUX20),
+    K(AUX21),
+    K(AUX22),
+    K(AUX23),
+    K(AUX24),
+    K(AUX25),
+    K(AUX26),
+    K(AUX27),
+    K(AUX28),
+    K(AUX29),
+    K(AUX30),
+    K(AUX31),
+    K(AUX32),
+
     {"SEMICOLON", ';'}, // because a raw semicolon separates commands
 
     {NULL, 0}
@@ -340,6 +378,19 @@ void Key_SetBinding(int keynum, const char *binding)
 
 // allocate memory for new binding
     keybindings[keynum] = Z_CopyString(binding);
+}
+
+const char *Key_GetBindingForKey(int keynum)
+{
+    if (keynum < 0 || keynum > 255) {
+        return "";
+    }
+
+    if (!keybindings[keynum]) {
+        return "";
+    }
+
+    return keybindings[keynum];
 }
 
 static void Key_Name_g(genctx_t *ctx)
@@ -888,6 +939,11 @@ void Key_ClearStates(void)
 
     memset(buttondown, 0, sizeof(buttondown));
     anykeydown = 0;
+}
+
+bool Key_IsWaiting(void)
+{
+    return key_wait_cb != NULL;
 }
 
 /*

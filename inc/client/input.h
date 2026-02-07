@@ -25,3 +25,4 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 void IN_Frame(void);
 void IN_Activate(void);
 void IN_WarpMouse(int x, int y);
+void IN_JoyRumbleTrigger(const char *name, const vec3_t origin, int entnum, float volume);

@@ -1,0 +1,168 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+env:
+  SDL2_VERSION: "2.32.10"
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build zip libsdl2-dev libopenal-dev \
+            libpng-dev libjpeg-dev zlib1g-dev mesa-common-dev \
+            libcurl4-gnutls-dev libx11-dev libxi-dev \
+            libwayland-dev wayland-protocols libdecor-0-dev
+
+      - name: Configure
+        run: |
+          meson setup \
+            --buildtype=release \
+            --auto-features=enabled \
+            --fatal-meson-warnings \
+            -Dwerror=true \
+            -Dwrap_mode=nofallback \
+            -Davcodec=disabled \
+            -Dsdl2=enabled \
+            -Dwindows-crash-dumps=disabled \
+            builddir
+
+      - name: Build
+        run: meson compile -C builddir
+
+      - name: Stage package
+        run: |
+          REL_LABEL="${GITHUB_REF_NAME:-manual-$GITHUB_RUN_NUMBER}"
+          REL_LABEL="${REL_LABEL//\//-}"
+          OUT="out/q2pro-linux-x64"
+          mkdir -p "$OUT/baseq2"
+
+          install -m755 builddir/q2pro "$OUT/q2pro"
+          install -m755 builddir/q2proded "$OUT/q2proded"
+          cp builddir/game*.so "$OUT/baseq2/"
+          cp src/client/ui/q2pro.menu "$OUT/baseq2/"
+          cp LICENSE "$OUT/"
+          cp doc/client.asciidoc "$OUT/CLIENT_MANUAL.txt"
+          cp doc/server.asciidoc "$OUT/SERVER_MANUAL.txt"
+
+          (cd out && zip -9 -r "q2pro-${REL_LABEL}-linux-x64.zip" q2pro-linux-x64)
+
+      - name: Upload Linux release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: q2pro-release-linux
+          if-no-files-found: error
+          path: out/*.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: subprojects/packagecache
+          key: ${{ hashFiles('subprojects/*.wrap') }}
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install build tools
+        run: py -m pip install --upgrade pip meson ninja
+
+      - name: Fetch SDL2 VC SDK
+        shell: pwsh
+        run: |
+          $deps = Join-Path $env:GITHUB_WORKSPACE "deps"
+          New-Item -ItemType Directory -Force -Path $deps | Out-Null
+          $zip = Join-Path $deps "SDL2-devel-${{ env.SDL2_VERSION }}-VC.zip"
+          Invoke-WebRequest -Uri "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.SDL2_VERSION }}/SDL2-devel-${{ env.SDL2_VERSION }}-VC.zip" -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $deps -Force
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          py -m mesonbuild.mesonmain setup --vsenv `
+            --buildtype=release `
+            --auto-features=enabled `
+            --fatal-meson-warnings `
+            -Dwerror=true `
+            -Dwrap_mode=forcefallback `
+            -Davcodec=disabled `
+            -Dsdl2=enabled `
+            -Dwayland=disabled `
+            -Dx11=disabled `
+            -Dcmake_prefix_path="$env:GITHUB_WORKSPACE/deps/SDL2-${{ env.SDL2_VERSION }}" `
+            builddir
+
+      - name: Build
+        shell: pwsh
+        run: py -m mesonbuild.mesonmain compile -C builddir
+
+      - name: Stage package
+        shell: pwsh
+        run: |
+          $rel = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "manual-$env:GITHUB_RUN_NUMBER" }
+          $rel = $rel -replace "/", "-"
+          $out = "out\\q2pro-windows-x64"
+          New-Item -ItemType Directory -Force -Path $out, "$out\\baseq2" | Out-Null
+
+          Copy-Item -Force builddir\q2pro.exe $out
+          Copy-Item -Force builddir\q2proded.exe $out
+          Copy-Item -Force builddir\gamex86_64.dll "$out\\baseq2\\gamex86_64.dll"
+          Copy-Item -Force src\client\ui\q2pro.menu "$out\\baseq2\\q2pro.menu"
+          Copy-Item -Force deps\SDL2-${{ env.SDL2_VERSION }}\lib\x64\SDL2.dll "$out\\SDL2.dll"
+          Copy-Item -Force LICENSE "$out\\LICENSE"
+          Copy-Item -Force doc\client.asciidoc "$out\\CLIENT_MANUAL.txt"
+          Copy-Item -Force doc\server.asciidoc "$out\\SERVER_MANUAL.txt"
+
+          $zip = "out\\q2pro-$rel-windows-x64.zip"
+          if (Test-Path $zip) { Remove-Item -Force $zip }
+          Compress-Archive -Path "$out\\*" -DestinationPath $zip -CompressionLevel Optimal
+
+      - name: Upload Windows release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: q2pro-release-windows
+          if-no-files-found: error
+          path: out/*.zip
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows]
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Show artifacts
+        run: |
+          ls -la artifacts
+          find artifacts -type f -maxdepth 3 -print
+
+      - name: Publish GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true
