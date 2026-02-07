@@ -179,7 +179,7 @@ jobs:
             meson compile -C builddir
 
             REL_LABEL="${GITHUB_REF_NAME:-manual-$GITHUB_RUN_NUMBER}"
-            REL_LABEL="${REL_LABEL//\//-}"
+            REL_LABEL="$(printf '%s' "$REL_LABEL" | tr '/' '-')"
             OUT="out/q2pro-freebsd-x64"
             mkdir -p "$OUT/baseq2"
 
