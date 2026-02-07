@@ -39,6 +39,7 @@ jobs:
             --fatal-meson-warnings \
             -Dwerror=true \
             -Dwrap_mode=nofallback \
+            -Davcodec=disabled \
             -Dsdl2=enabled \
             -Dwindows-crash-dumps=disabled \
             builddir
@@ -99,12 +100,13 @@ jobs:
       - name: Configure
         shell: pwsh
         run: |
-          meson setup --vsenv `
+          py -m mesonbuild.mesonmain setup --vsenv `
             --buildtype=release `
             --auto-features=enabled `
             --fatal-meson-warnings `
             -Dwerror=true `
             -Dwrap_mode=forcefallback `
+            -Davcodec=disabled `
             -Dsdl2=enabled `
             -Dwayland=disabled `
             -Dx11=disabled `
@@ -113,7 +115,7 @@ jobs:
 
       - name: Build
         shell: pwsh
-        run: meson compile -C builddir
+        run: py -m mesonbuild.mesonmain compile -C builddir
 
       - name: Stage package
         shell: pwsh

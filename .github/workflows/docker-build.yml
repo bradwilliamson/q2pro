@@ -27,7 +27,7 @@ jobs:
                    mesa-common-dev libcurl4-gnutls-dev \
                    libx11-dev libxi-dev \
                    libwayland-dev wayland-protocols libdecor-0-dev && \
-                   meson setup --auto-features=enabled -Dwrap_mode=nofallback -Dsdl2=enabled -Dwindows-crash-dumps=disabled builddir && \
+                   meson setup --auto-features=enabled -Dwrap_mode=nofallback -Davcodec=disabled -Dsdl2=enabled -Dwindows-crash-dumps=disabled builddir && \
                    meson compile -C builddir"
 
       - name: Verify output
