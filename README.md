@@ -50,8 +50,8 @@ Recent Changes
 * Added rumble support (`joy_rumble`, gameplay rumble controls).
 * Added SDL2-focused CI/release workflows that package client, dedicated server and required runtime files.
 
-Windows binaries are published in GitHub Releases for tagged builds.
-Linux binaries are not provided; users are advised to build from source.
+Windows, Linux and FreeBSD binaries are published in GitHub Releases for tagged builds.
+Other platforms are advised to build from source.
 See BUILDING.md file for instructions.
 
 For information on using and configuring Q2PRO, refer to client and server
