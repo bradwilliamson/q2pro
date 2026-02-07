@@ -707,6 +707,8 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     ps->sfx = sfx;
     ps->begin = s_api->get_begin_ofs(timeofs);
 
+    IN_JoyRumbleTrigger(sfx->name, origin, entnum, vol);
+
     // sort into the pending sound list
     LIST_FOR_EACH(playsound_t, sort, &s_pendingplays, entry)
         if (sort->begin >= ps->begin)

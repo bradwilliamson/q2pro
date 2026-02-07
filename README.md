@@ -15,6 +15,7 @@ features include:
 * compatibility with re-release assets
 * fast and secure HTTP downloads
 * multichannel sound using OpenAL
+* SDL2 gamepad support (analog movement/look, menu navigation, binds, rumble)
 * stereo WAV files support
 * seeking in demos, recording from demos, server side multiview demos
 * live game broadcasting capabilities
@@ -22,11 +23,36 @@ features include:
 * eliminates frame overflows (even for legacy clients)
 * won't crash if game data is corrupted
 
-Q2PRO doesn't have releases. It is always recommended to use the latest nighly
-build from the top of Releases page.
+Gamepad Quick Start
+-------------------
 
-Linux binaries are not provided. Users are advised to build from source. See
-BUILDING.md file for instructions.
+1. Build with SDL2 enabled (`-Dsdl2=enabled`).
+2. On Windows, place `SDL2.dll` next to `q2pro.exe`.
+3. In the in-game console:
+
+       set in_joystick_auto 1
+       set joy_autobind 1
+       joy_bind_defaults
+       in_restart
+
+4. Optional rumble test:
+
+       joy_rumble 32767 32767 200
+
+See `doc/client.asciidoc` for full gamepad cvars/commands and bind keys.
+
+Recent Changes
+--------------
+
+* Added SDL2 GameController input path for modern gamepads.
+* Added analog movement/look and menu navigation with controller input.
+* Added trigger-to-digital key support (`AUX27`/`AUX28`) and default bind helper commands.
+* Added rumble support (`joy_rumble`, gameplay rumble controls).
+* Added SDL2-focused CI/release workflows that package client, dedicated server and required runtime files.
+
+Windows binaries are published in GitHub Releases for tagged builds.
+Linux binaries are not provided; users are advised to build from source.
+See BUILDING.md file for instructions.
 
 For information on using and configuring Q2PRO, refer to client and server
 manuals available in doc/ subdirectory.

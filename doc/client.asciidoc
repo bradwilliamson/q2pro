@@ -1141,6 +1141,90 @@ m_filter::
     samples.  Default value is 0 (filtering disabled).
 
 
+Gamepad Input
+~~~~~~~~~~~~~
+
+in_joystick::
+    Enables SDL2 gamepad support. Default value is 0 (disabled).
+
+in_joystick_auto::
+    Automatically enables +in_joystick+ when a controller is detected. Default
+    value is 0 (disabled).
+
+joy_deadzone::
+    Deadzone applied to analog sticks. Default value is 0.15.
+
+joy_move_scale::
+    Movement scale multiplier for left stick. Default value is 1.0.
+
+joy_look_scale::
+    Look scale for right stick, in "mouse counts per second" at full deflection.
+    Default value is 1800.
+
+joy_invert_y::
+    Invert right stick Y axis. Default value is 0.
+
+joy_trigger_threshold::
+    Trigger threshold (0-1) for treating analog triggers as digital buttons
+    (+AUX27+ and +AUX28+). Default value is 0.55.
+
+joy_rumble_enable::
+    Enables SDL2 gamepad rumble. Default value is 1.
+
+joy_haptic_magnitude::
+    Global multiplier for gameplay rumble intensity. Default value is 1.0.
+
+joy_haptic_distance::
+    Max distance (in world units) for rumble attenuation from non-player sound
+    sources. Default value is 1000.0.
+
+joy_rumble::
+    Tests gamepad rumble: +joy_rumble <low 0-65535> <high 0-65535> <ms>+.
+
+joy_bind_defaults::
+    Applies baseline binds for +JOY1-4+ and +AUX1-32+ without overwriting existing
+    binds unless +force+ is specified.
+
+joy_unbindall::
+    Clears all +JOY+ and +AUX+ bindings (keyboard/mouse bindings untouched).
+
+To enable controller input quickly, run:
+
+----
+set in_joystick_auto 1
+set joy_autobind 1
+joy_bind_defaults
+in_restart
+----
+
+If auto-detect is not desired, set +in_joystick 1+ and +in_joystick_auto 0+.
+
+Default bind profile applied by +joy_bind_defaults+:
+
+* +AUX28+ -> +attack+ (right trigger)
+* +AUX27+ -> +use+ (left trigger)
+* +JOY1+ -> +moveup+ (A / Cross)
+* +JOY2+ -> +movedown+ (B / Circle)
+* +JOY3+ -> +invuse+ (X / Square)
+* +JOY4+ -> +inven+ (Y / Triangle)
+* +AUX6+ / +AUX7+ -> +weapprev+ / +weapnext+ (shoulders)
+* +AUX8+/+AUX9+/+AUX10+/+AUX11+ -> +invuse+/+invdrop+/+invprev+/+invnext+ (D-pad)
+* +AUX1+ -> +score+, +AUX4+ -> +centerview+, +AUX5+ -> +speed+
+
+Additional behavior:
+
+* Right stick controls look, left stick controls movement.
+* Left/right triggers are exposed as digital keys +AUX27+ and +AUX28+ using +joy_trigger_threshold+.
+* In menus, A confirms (Enter), B/Back cancels (Escape), and Start also opens menu/back via Escape.
+* Any controller button can be rebound through +bind JOY*+ and +bind AUX*+ keys.
+
+Rumble troubleshooting:
+
+* Verify +joy_rumble_enable 1+.
+* Run +joy_rumble 32767 32767 200+ to confirm controller rumble path.
+* Increase +joy_haptic_magnitude+ if effects feel weak.
+
+
 Miscellaneous
 ~~~~~~~~~~~~~
 
@@ -1754,7 +1838,7 @@ it used to be you know where to look. The following list may be incomplete.
 
 - Accessing data from CD and ‘cddir’ variable are not supported.
 
-- Joysticks are not supported.
+- Joysticks/gamepads are supported via SDL2 GameController API (enable with +in_joystick 1+).
 
 - Single player savegame format has been rewritten from scratch for better
   robustness and portability. Only the ‘baseq2’ game library included in Q2PRO
